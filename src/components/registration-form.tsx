@@ -81,6 +81,7 @@ declare global {
           "error-callback": () => void;
         },
       ) => string;
+      reset: (widgetId?: string) => void;
     };
   }
 }
@@ -105,6 +106,7 @@ export function RegistrationForm() {
   const [serverError, setServerError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [turnstileReady, setTurnstileReady] = useState(false);
+  const [turnstileWidgetId, setTurnstileWidgetId] = useState<string | null>(null);
   const turnstileRef = useRef<HTMLDivElement>(null);
   const widgetRenderedRef = useRef(false);
   const draftReadyRef = useRef(false);
@@ -113,6 +115,7 @@ export function RegistrationForm() {
     handleSubmit,
     trigger,
     control,
+    getValues,
     setValue,
     reset,
     formState: { errors },
@@ -166,14 +169,21 @@ export function RegistrationForm() {
       return;
     }
 
-    window.turnstile?.render(turnstileRef.current, {
+    const widgetId = window.turnstile?.render(turnstileRef.current, {
       sitekey: turnstileSiteKey,
-      callback: (token) => setValue("captchaToken", token),
-      "expired-callback": () => setValue("captchaToken", ""),
-      "error-callback": () => setValue("captchaToken", ""),
+      callback: (token) => setValue("captchaToken", token, { shouldDirty: true }),
+      "expired-callback": () => setValue("captchaToken", "", { shouldDirty: true }),
+      "error-callback": () => setValue("captchaToken", "", { shouldDirty: true }),
     });
+    setTurnstileWidgetId(widgetId ?? null);
     widgetRenderedRef.current = true;
   }, [setValue, step, turnstileReady]);
+
+  function resetTurnstile() {
+    if (!turnstileSiteKey) return;
+    setValue("captchaToken", "", { shouldDirty: true });
+    window.turnstile?.reset(turnstileWidgetId ?? undefined);
+  }
 
   async function nextStep() {
     const valid = await trigger(stepFields[step], { shouldFocus: true });
@@ -184,14 +194,20 @@ export function RegistrationForm() {
     setSubmitting(true);
     setServerError("");
     try {
-      if (turnstileSiteKey && !data.captchaToken) {
+      const currentData = {
+        ...data,
+        captchaToken: getValues("captchaToken"),
+      };
+
+      if (turnstileSiteKey && !currentData.captchaToken) {
+        resetTurnstile();
         return;
       }
 
       const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(currentData),
       });
       const result = (await response.json()) as {
         message?: string;
@@ -202,10 +218,13 @@ export function RegistrationForm() {
       };
       if (!response.ok) {
         setServerError(result.message ?? "Impossible d’enregistrer l’inscription.");
+        if (response.status === 400 && result.message?.includes("anti-spam")) {
+          resetTurnstile();
+        }
         return;
       }
 
-      if (data.payNow) {
+      if (currentData.payNow) {
         const paymentResponse = await fetch("/api/kobara/create-payment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -410,6 +429,7 @@ export function RegistrationForm() {
             {turnstileSiteKey ? (
               <div className="rounded-xl border border-slate-200 bg-white p-4">
                 <p className="mb-3 text-sm font-semibold text-[#152238]">Vérification anti-spam</p>
+                <input type="hidden" {...register("captchaToken")} />
                 <div ref={turnstileRef} />
               </div>
             ) : null}
