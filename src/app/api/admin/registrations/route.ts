@@ -12,6 +12,8 @@ export async function GET(request: Request) {
   const search = searchParams.get("search");
   const city = searchParams.get("city");
   const status = searchParams.get("status");
+  const paymentStatus = searchParams.get("paymentStatus");
+  const registrationStatus = searchParams.get("registrationStatus");
   const date = searchParams.get("date");
 
   let query = getSupabaseAdmin()
@@ -26,6 +28,8 @@ export async function GET(request: Request) {
   }
   if (city) query = query.ilike("city", `%${city}%`);
   if (status) query = query.eq("status", status);
+  if (paymentStatus) query = query.eq("payment_status", paymentStatus);
+  if (registrationStatus) query = query.eq("registration_status", registrationStatus);
   if (date) {
     query = query.gte("created_at", `${date}T00:00:00`).lte("created_at", `${date}T23:59:59`);
   }
@@ -34,10 +38,11 @@ export async function GET(request: Request) {
   if (error) return NextResponse.json({ message: error.message }, { status: 500 });
 
   if (format === "csv") {
+    const dateLabel = new Date().toISOString().slice(0, 10);
     return new NextResponse(toCsv(data ?? []), {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": "attachment; filename=\"inscriptions-smartcore.csv\"",
+        "Content-Disposition": `attachment; filename="rapport-inscriptions-smartcore-${dateLabel}.csv"`,
       },
     });
   }

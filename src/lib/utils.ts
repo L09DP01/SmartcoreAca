@@ -20,7 +20,7 @@ export function toCsv(rows: Record<string, unknown>[]) {
   if (!rows.length) return "";
   const headers = Object.keys(rows[0]);
   const escape = (value: unknown) => {
-    const text = String(value ?? "");
+    const text = Array.isArray(value) ? value.join(" | ") : String(value ?? "");
     return `"${text.replaceAll('"', '""')}"`;
   };
   return [
