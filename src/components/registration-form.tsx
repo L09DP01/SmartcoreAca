@@ -185,7 +185,6 @@ export function RegistrationForm() {
     setServerError("");
     try {
       if (turnstileSiteKey && !data.captchaToken) {
-        setServerError("Veuillez terminer la vérification anti-spam avant de confirmer.");
         return;
       }
 
