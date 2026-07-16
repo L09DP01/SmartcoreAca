@@ -206,9 +206,12 @@ export function RegistrationForm() {
               <legend className="mb-3 text-sm font-semibold text-[#152238]">Quelles plateformes souhaitez-vous apprendre à utiliser ?</legend>
               <div className="grid gap-2 sm:grid-cols-2">
                 {platforms.map((platform) => (
-                  <label key={platform} className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-3 text-sm">
+                  <label
+                    key={platform}
+                    className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm font-medium text-[#152238]"
+                  >
                     <input type="checkbox" value={platform} className="h-4 w-4 accent-[#002B55]" {...register("platforms")} />
-                    {platform}
+                    <span>{platform}</span>
                   </label>
                 ))}
               </div>
@@ -316,9 +319,12 @@ function RadioGroup({
       <legend className="mb-3 text-sm font-semibold text-[#152238]">{label}</legend>
       <div className="grid gap-2 sm:grid-cols-2">
         {options.map((option) => (
-          <label key={option} className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-3 text-sm">
+          <label
+            key={option}
+            className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm font-medium text-[#152238]"
+          >
             <input type="radio" value={option} className="h-4 w-4 accent-[#002B55]" {...register(name)} />
-            {option}
+            <span>{option}</span>
           </label>
         ))}
       </div>
