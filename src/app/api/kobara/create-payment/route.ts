@@ -1,6 +1,23 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { getAppUrl, getKobaraApiUrl, PAYMENT_AMOUNT, PAYMENT_CURRENCY } from "@/lib/payment";
 import { getSupabaseAdmin } from "@/lib/supabase";
+
+type KobaraPaymentResponse = {
+  status?: string;
+  data?: {
+    id?: string;
+    payment_id?: string;
+    checkout_url?: string;
+    checkoutUrl?: string;
+  };
+  id?: string;
+  payment_id?: string;
+  checkout_url?: string;
+  checkoutUrl?: string;
+  error?: unknown;
+  message?: string;
+};
 
 export async function POST(request: Request) {
   try {
@@ -37,14 +54,16 @@ export async function POST(request: Request) {
       headers: {
         Authorization: `Bearer ${secret}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": randomUUID(),
       },
       body: JSON.stringify({
         amount: PAYMENT_AMOUNT,
         currency: PAYMENT_CURRENCY,
+        provider: "kobara",
+        description: `Adresse postale Smartcore ${registration.registration_number}`,
         customer: {
           name: `${registration.first_name} ${registration.last_name}`,
           phone: registration.whatsapp,
-          email: registration.email,
         },
         metadata: {
           registration_id: registration.id,
@@ -56,24 +75,27 @@ export async function POST(request: Request) {
       }),
     });
 
-    const kobaraData = await response.json();
-    if (!response.ok || kobaraData.status !== "success") {
+    const kobaraData = (await response.json()) as KobaraPaymentResponse;
+    const payment = kobaraData.data ?? kobaraData;
+    const checkoutUrl = payment.checkout_url ?? payment.checkoutUrl;
+    const paymentId = payment.id ?? payment.payment_id;
+
+    if (!response.ok || !checkoutUrl) {
       console.error("Kobara error:", kobaraData);
       return NextResponse.json({ error: "Impossible de créer le paiement Kobara." }, { status: 502 });
     }
 
-    const payment = kobaraData.data;
     await supabase
       .from("registrations")
       .update({
-        kobara_payment_id: payment.id,
-        kobara_checkout_url: payment.checkout_url,
+        kobara_payment_id: paymentId ?? null,
+        kobara_checkout_url: checkoutUrl,
         payment_status: "pending",
         payment_attempted_at: new Date().toISOString(),
       })
       .eq("id", registration.id);
 
-    return NextResponse.json({ checkoutUrl: payment.checkout_url });
+    return NextResponse.json({ checkoutUrl });
   } catch (error) {
     console.error("Create Kobara payment error:", error);
     return NextResponse.json({ error: "Erreur interne du serveur." }, { status: 500 });
