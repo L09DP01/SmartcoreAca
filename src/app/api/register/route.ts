@@ -4,6 +4,8 @@ import { sendConfirmationEmail } from "@/lib/email";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { registrationSchema } from "@/lib/validations";
 
+const CONFIRMED_STATUS = "Confirm\u00e9e";
+
 async function verifyTurnstile(token?: string) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
@@ -29,14 +31,14 @@ export async function POST(request: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { message: "Veuillez corriger les champs indiqués.", errors: parsed.error.flatten().fieldErrors },
+        { message: "Veuillez corriger les champs indiqu\u00e9s.", errors: parsed.error.flatten().fieldErrors },
         { status: 400 },
       );
     }
 
     const captchaOk = await verifyTurnstile(parsed.data.captchaToken);
     if (!captchaOk) {
-      return NextResponse.json({ message: "La vérification anti-spam a échoué." }, { status: 400 });
+      return NextResponse.json({ message: "La v\u00e9rification anti-spam a \u00e9chou\u00e9." }, { status: 400 });
     }
 
     const supabase = getSupabaseAdmin();
@@ -92,7 +94,7 @@ export async function POST(request: Request) {
             kobara_checkout_url: null,
             registration_status: registrationStatus,
             confirmed_at: parsed.data.payNow ? null : new Date().toISOString(),
-            status: parsed.data.payNow ? "En attente" : "ConfirmÃ©e",
+            status: parsed.data.payNow ? "En attente" : CONFIRMED_STATUS,
             confirmation_token: confirmationToken,
           })
           .eq("id", duplicate.id)
@@ -102,7 +104,9 @@ export async function POST(request: Request) {
         if (updateError) throw updateError;
 
         if (!parsed.data.payNow) {
-          await sendConfirmationEmail(registration);
+          await sendConfirmationEmail(registration).catch((emailError) => {
+            console.error("Confirmation email failed:", emailError);
+          });
         }
 
         return NextResponse.json({
@@ -116,7 +120,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         {
-          message: "Une inscription existe déjà avec cet e-mail ou ce numéro WhatsApp.",
+          message: "Une inscription existe d\u00e9j\u00e0 avec cet e-mail ou ce num\u00e9ro WhatsApp.",
           registrationNumber: duplicate.registration_number,
         },
         { status: 409 },
@@ -162,7 +166,7 @@ export async function POST(request: Request) {
         payment_currency: "HTG",
         registration_status: registrationStatus,
         confirmed_at: parsed.data.payNow ? null : new Date().toISOString(),
-        status: parsed.data.payNow ? "En attente" : "Confirmée",
+        status: parsed.data.payNow ? "En attente" : CONFIRMED_STATUS,
         confirmation_token: confirmationToken,
       })
       .select("*")
@@ -171,7 +175,9 @@ export async function POST(request: Request) {
     if (insertError) throw insertError;
 
     if (!parsed.data.payNow) {
-      await sendConfirmationEmail(registration);
+      await sendConfirmationEmail(registration).catch((emailError) => {
+        console.error("Confirmation email failed:", emailError);
+      });
     }
 
     return NextResponse.json({
