@@ -31,7 +31,7 @@ export function Header() {
           ))}
         </div>
         <Link
-          href="/#inscription"
+          href="/inscription"
           className="hidden rounded-full bg-[#FFB800] px-5 py-3 text-sm font-bold text-[#152238] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#f0ac00] lg:inline-flex"
         >
           S’inscrire gratuitement
@@ -60,7 +60,7 @@ export function Header() {
               </Link>
             ))}
             <Link
-              href="/#inscription"
+              href="/inscription"
               onClick={() => setOpen(false)}
               className="mt-2 rounded-full bg-[#FFB800] px-5 py-3 text-center text-sm font-bold text-[#152238]"
             >
