@@ -42,7 +42,10 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Impossible de confirmer l’inscription." }, { status: 500 });
   }
 
-  await sendConfirmationEmail(data);
+  await sendConfirmationEmail(data).catch((emailError) => {
+    console.error("Confirmation email failed:", emailError);
+  });
+
   return NextResponse.json({
     registrationNumber: data.registration_number,
     token: data.confirmation_token,
