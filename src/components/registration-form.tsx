@@ -137,6 +137,7 @@ export function RegistrationForm() {
       </div>
 
       <form onSubmit={handleSubmit(submit)} noValidate>
+        <div className="max-h-[560px] overflow-y-auto pr-1 sm:max-h-[620px] lg:max-h-[68vh]">
         {step === 0 ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Nom" htmlFor="lastName" error={errors.lastName}>
@@ -266,8 +267,9 @@ export function RegistrationForm() {
             ) : null}
           </div>
         ) : null}
+        </div>
 
-        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-between">
+        <div className="sticky bottom-0 -mx-5 mt-5 flex flex-col gap-3 border-t border-slate-100 bg-white px-5 pt-4 sm:-mx-7 sm:flex-row sm:justify-between sm:px-7">
           {step > 0 ? (
             <button
               type="button"
