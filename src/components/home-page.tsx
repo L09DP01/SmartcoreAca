@@ -37,25 +37,25 @@ export function HomePage() {
   return (
     <>
       <main id="accueil">
-        <section className="bg-[#001E3C] pt-24 text-white">
-          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-16">
-            <div className="relative overflow-hidden rounded-3xl bg-[#002B55] p-6 shadow-2xl shadow-slate-950/20 sm:p-8 lg:p-10">
-              <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,#ffffff_1px,transparent_0)] [background-size:28px_28px]" />
-              <div className="relative">
+        <section className="relative overflow-hidden bg-[#001E3C] pt-24 text-white">
+          <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,#ffffff_1px,transparent_0)] [background-size:28px_28px]" />
+          <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+            <div className="grid items-center gap-10 lg:grid-cols-[1fr_0.86fr]">
+              <div className="text-center lg:text-left">
                 <span className="inline-flex rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#FFB800]">
                   Formation gratuite
                 </span>
-                <h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
+                <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-black leading-tight sm:text-5xl lg:mx-0 lg:text-6xl">
                   Créez votre entreprise et achetez en ligne{" "}
                   <span className="text-[#FFB800]">en toute sécurité</span>
                 </h1>
-                <p className="mt-5 max-w-2xl text-base leading-8 text-blue-50 sm:text-lg">
+                <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-blue-50 sm:text-lg lg:mx-0">
                   Une formation pratique et complète pour apprendre à trouver des fournisseurs fiables, utiliser les
                   moyens de paiement en ligne, acheter sur les grandes plateformes internationales et protéger ses
                   transactions.
                 </p>
 
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
                   <Link
                     href="/inscription"
                     className="inline-flex items-center justify-center rounded-full bg-[#FFB800] px-6 py-4 text-sm font-black text-[#152238] shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-[#f0ac00]"
@@ -69,56 +69,47 @@ export function HomePage() {
                     Voir le programme
                   </Link>
                 </div>
+              </div>
 
-                <div className="mt-7 grid gap-3 sm:grid-cols-3">
-                  <HeroPill icon={<Video />} title="Formation en ligne" text="Google Meet" />
-                  <HeroPill icon={<MessageCircle />} title="Groupe et support" text="WhatsApp" />
-                  <HeroPill icon={<Users />} title="Places limitées" text="Inscription obligatoire" />
-                </div>
-
-                <div className="mt-8">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#FFB800]">Ce que vous allez apprendre</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {learnItems.map((item) => (
-                      <div key={item} className="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold">
-                        <Check className="text-[#16A765]" size={18} /> {item}
+              <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
+                <div className="rounded-3xl border border-white/15 bg-white/10 p-5 shadow-2xl shadow-black/20 backdrop-blur">
+                  <div className="rounded-2xl bg-[#002B55] p-5">
+                    <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#FFB800]">
+                          Parcours pratique
+                        </p>
+                        <p className="mt-2 text-xl font-black">E-commerce & paiements</p>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-8 grid gap-3 sm:grid-cols-4">
-                  {["Formation 100 % gratuite", "Sessions en ligne", "Accompagnement WhatsApp", "Exercices pratiques"].map((item) => (
-                    <div key={item} className="rounded-xl border border-white/15 p-4 text-sm font-bold text-blue-50">
-                      {item}
+                      <ShoppingBag className="text-[#FFB800]" size={34} />
                     </div>
-                  ))}
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      {learnItems.slice(0, 6).map((item) => (
+                        <div
+                          key={item}
+                          className="flex items-center gap-3 rounded-xl bg-white/10 px-3 py-3 text-sm font-semibold text-blue-50"
+                        >
+                          <Check className="shrink-0 text-[#16A765]" size={17} /> {item}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-5 rounded-2xl border border-[#FFB800]/40 bg-[#FFB800]/10 p-4">
+                      <p className="text-sm font-bold text-[#FFB800]">Participation 100 % gratuite</p>
+                      <p className="mt-2 text-xs leading-6 text-blue-50">
+                        Les 1 400 HTG concernent uniquement l’adresse postale personnelle utilisée pour certaines
+                        activités pratiques.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-            <aside className="rounded-3xl bg-white p-6 text-[#152238] shadow-2xl shadow-slate-950/20 sm:p-8">
-              <p className="text-sm font-bold uppercase tracking-wide text-[#16A765]">Inscription</p>
-              <h2 className="mt-3 text-2xl font-black text-[#002B55]">
-                Remplissez le formulaire sur une page dédiée.
-              </h2>
-              <p className="mt-4 text-sm leading-7 text-slate-700">
-                La page d’inscription est séparée pour faciliter la lecture, éviter un accueil trop long et rendre le
-                formulaire plus confortable sur mobile.
-              </p>
-              <div className="mt-6 rounded-2xl bg-[#F5F7FA] p-5">
-                <h3 className="font-bold text-[#002B55]">Participation 100 % gratuite</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-700">
-                  Prévoir uniquement 1 400 HTG pour l’acquisition de votre adresse postale personnelle. Cette somme ne
-                  représente pas des frais de formation.
-                </p>
-              </div>
-              <Link
-                href="/inscription"
-                className="mt-6 inline-flex w-full justify-center rounded-full bg-[#FFB800] px-6 py-4 text-sm font-black text-[#152238] transition hover:bg-[#f0ac00]"
-              >
-                Aller au formulaire
-              </Link>
-            </aside>
+
+            <div className="mt-10 grid gap-3 sm:grid-cols-3">
+              <HeroPill icon={<Video />} title="Formation en ligne" text="Google Meet" />
+              <HeroPill icon={<MessageCircle />} title="Groupe et support" text="WhatsApp" />
+              <HeroPill icon={<Users />} title="Places limitées" text="Inscription obligatoire" />
+            </div>
           </div>
         </section>
 
@@ -179,7 +170,10 @@ export function HomePage() {
           <SectionTitle eyebrow="Pourquoi participer ?" title="Une formation accessible, concrète et orientée action." />
           <div className="mx-auto mt-10 grid max-w-7xl gap-4 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3 lg:px-8">
             {benefits.map((benefit) => (
-              <div key={benefit} className="flex items-center gap-3 rounded-2xl bg-white p-5 font-semibold text-[#152238] shadow-sm">
+              <div
+                key={benefit}
+                className="flex items-center gap-3 rounded-2xl bg-white p-5 font-semibold text-[#152238] shadow-sm"
+              >
                 <BadgeCheck className="text-[#16A765]" /> {benefit}
               </div>
             ))}
@@ -191,7 +185,9 @@ export function HomePage() {
           <div className="mx-auto mt-10 grid max-w-4xl gap-4 px-4 sm:px-6 lg:px-8">
             {faqItems.map((item) => (
               <details key={item.question} className="group rounded-2xl border border-slate-200 p-5">
-                <summary className="cursor-pointer list-none text-base font-bold text-[#002B55]">{item.question}</summary>
+                <summary className="cursor-pointer list-none text-base font-bold text-[#002B55]">
+                  {item.question}
+                </summary>
                 <p className="mt-3 text-sm leading-7 text-slate-700">{item.answer}</p>
               </details>
             ))}
