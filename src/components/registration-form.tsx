@@ -3,7 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import Script from "next/script";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { platforms } from "@/lib/config";
 import { registrationSchema, type RegistrationInput } from "@/lib/validations";
@@ -38,16 +39,38 @@ const stepFields: Array<Array<keyof RegistrationInput>> = [
 
 const selectPlaceholder = "Sélectionner";
 
+const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string;
+          callback: (token: string) => void;
+          "expired-callback": () => void;
+          "error-callback": () => void;
+        },
+      ) => string;
+    };
+  }
+}
+
 export function RegistrationForm() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [serverError, setServerError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [turnstileReady, setTurnstileReady] = useState(false);
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const widgetRenderedRef = useRef(false);
   const {
     register,
     handleSubmit,
     trigger,
     control,
+    setValue,
     formState: { errors },
   } = useForm<RegistrationInput>({
     resolver: zodResolver(registrationSchema),
@@ -74,11 +97,26 @@ export function RegistrationForm() {
       referralSource: "",
       termsAccepted: false,
       communicationConsent: true,
+      captchaToken: "",
     },
   });
 
   const values = useWatch({ control });
   const progress = useMemo(() => `${((step + 1) / 3) * 100}%`, [step]);
+
+  useEffect(() => {
+    if (!turnstileSiteKey || step !== 2 || !turnstileReady || !turnstileRef.current || widgetRenderedRef.current) {
+      return;
+    }
+
+    window.turnstile?.render(turnstileRef.current, {
+      sitekey: turnstileSiteKey,
+      callback: (token) => setValue("captchaToken", token),
+      "expired-callback": () => setValue("captchaToken", ""),
+      "error-callback": () => setValue("captchaToken", ""),
+    });
+    widgetRenderedRef.current = true;
+  }, [setValue, step, turnstileReady]);
 
   async function nextStep() {
     const valid = await trigger(stepFields[step], { shouldFocus: true });
@@ -89,6 +127,11 @@ export function RegistrationForm() {
     setSubmitting(true);
     setServerError("");
     try {
+      if (turnstileSiteKey && !data.captchaToken) {
+        setServerError("Veuillez terminer la vérification anti-spam avant de confirmer.");
+        return;
+      }
+
       const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -115,6 +158,13 @@ export function RegistrationForm() {
 
   return (
     <section id="inscription" className="rounded-2xl bg-white p-5 shadow-xl shadow-slate-900/10 sm:p-7">
+      {turnstileSiteKey ? (
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+          strategy="afterInteractive"
+          onLoad={() => setTurnstileReady(true)}
+        />
+      ) : null}
       <div className="mb-6">
         <p className="text-sm font-bold uppercase tracking-wide text-[#16A765]">Inscription gratuite</p>
         <h2 className="mt-2 text-2xl font-bold text-[#002B55]">Réservez votre place</h2>
@@ -264,6 +314,12 @@ export function RegistrationForm() {
               <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700" role="alert">
                 {serverError}
               </p>
+            ) : null}
+            {turnstileSiteKey ? (
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <p className="mb-3 text-sm font-semibold text-[#152238]">Vérification anti-spam</p>
+                <div ref={turnstileRef} />
+              </div>
             ) : null}
           </div>
         ) : null}

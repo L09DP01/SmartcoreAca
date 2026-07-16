@@ -6,7 +6,8 @@ import { registrationSchema } from "@/lib/validations";
 
 async function verifyTurnstile(token?: string) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true;
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  if (!secret || !siteKey) return true;
   if (!token) return false;
 
   const body = new FormData();
