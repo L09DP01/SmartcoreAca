@@ -22,11 +22,27 @@ function optionalLink(label: string, url?: string) {
   return `<li><strong>${label} :</strong> <a href="${url}" style="color:#002B55;font-weight:700">${url}</a></li>`;
 }
 
+function getEmailFrom() {
+  const fallback = `Smartcore Academique <${brand.email}>`;
+  let from = process.env.EMAIL_FROM?.trim() || fallback;
+
+  if (from.startsWith("EMAIL_FROM=")) {
+    from = from.replace(/^EMAIL_FROM=/, "").trim();
+  }
+
+  from = from.replace(/\\"/g, '"');
+  if ((from.startsWith('"') && from.endsWith('"')) || (from.startsWith("'") && from.endsWith("'"))) {
+    from = from.slice(1, -1).trim();
+  }
+
+  return from;
+}
+
 export async function sendConfirmationEmail(registration: RegistrationRecord) {
   const client = getResend();
   if (!client) return false;
 
-  const from = process.env.EMAIL_FROM ?? `Smartcore Academique <${brand.email}>`;
+  const from = getEmailFrom();
   const whatsappGroupUrl = process.env.NEXT_PUBLIC_WHATSAPP_GROUP_URL;
   const googleMeetUrl = process.env.NEXT_PUBLIC_GOOGLE_MEET_URL;
   const googleCalendarUrl = process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_URL;
