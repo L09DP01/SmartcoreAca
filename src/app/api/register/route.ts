@@ -44,12 +44,76 @@ export async function POST(request: Request) {
 
     const { data: duplicate, error: duplicateError } = await supabase
       .from("registrations")
-      .select("registration_number")
+      .select("id, registration_number, confirmation_token, payment_status, registration_status")
       .or(`email.eq.${parsed.data.email.toLowerCase()},normalized_whatsapp.eq.${normalizedWhatsapp}`)
       .maybeSingle();
 
     if (duplicateError) throw duplicateError;
     if (duplicate) {
+      const canResumeRegistration =
+        duplicate.registration_status === "draft" &&
+        ["pending", "failed", "cancelled"].includes(duplicate.payment_status ?? "");
+
+      if (canResumeRegistration) {
+        const confirmationToken = duplicate.confirmation_token || randomBytes(24).toString("hex");
+        const paymentStatus = parsed.data.payNow ? "pending" : "not_paid";
+        const registrationStatus = parsed.data.payNow ? "draft" : "confirmed";
+        const { data: registration, error: updateError } = await supabase
+          .from("registrations")
+          .update({
+            first_name: parsed.data.firstName,
+            last_name: parsed.data.lastName,
+            email: parsed.data.email.toLowerCase(),
+            whatsapp: parsed.data.whatsapp,
+            normalized_whatsapp: normalizedWhatsapp,
+            gender: parsed.data.gender || null,
+            age_range: parsed.data.ageRange,
+            country: parsed.data.country,
+            department: parsed.data.department,
+            city: parsed.data.city,
+            occupation: parsed.data.occupation,
+            education_level: parsed.data.educationLevel,
+            has_payment_card: parsed.data.hasPaymentCard,
+            has_paypal: parsed.data.hasPaypal,
+            has_us_address: parsed.data.hasUsAddress,
+            online_purchase_experience: parsed.data.onlinePurchaseExperience,
+            platforms: parsed.data.platforms,
+            main_goal: parsed.data.mainGoal,
+            motivation: parsed.data.motivation,
+            referral_source: parsed.data.referralSource,
+            terms_accepted: parsed.data.termsAccepted,
+            communication_consent: parsed.data.communicationConsent,
+            pay_now: parsed.data.payNow,
+            payment_status: paymentStatus,
+            payment_amount: 1400,
+            amount_paid: 0,
+            payment_currency: "HTG",
+            kobara_payment_id: null,
+            kobara_checkout_url: null,
+            registration_status: registrationStatus,
+            confirmed_at: parsed.data.payNow ? null : new Date().toISOString(),
+            status: parsed.data.payNow ? "En attente" : "ConfirmÃ©e",
+            confirmation_token: confirmationToken,
+          })
+          .eq("id", duplicate.id)
+          .select("*")
+          .single();
+
+        if (updateError) throw updateError;
+
+        if (!parsed.data.payNow) {
+          await sendConfirmationEmail(registration);
+        }
+
+        return NextResponse.json({
+          registrationId: registration.id,
+          registrationNumber: registration.registration_number,
+          token: registration.confirmation_token,
+          payNow: registration.pay_now,
+          resumed: true,
+        });
+      }
+
       return NextResponse.json(
         {
           message: "Une inscription existe déjà avec cet e-mail ou ce numéro WhatsApp.",
