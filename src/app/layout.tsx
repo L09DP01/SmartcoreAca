@@ -16,6 +16,11 @@ export const metadata: Metadata = {
   title: "Smartcore Académique | Inscription gratuite",
   description:
     "Formation gratuite pour apprendre à entreprendre, trouver des fournisseurs, utiliser les paiements en ligne et acheter en toute sécurité.",
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png" }],
+    shortcut: [{ url: "/icon.png", type: "image/png" }],
+    apple: [{ url: "/icon.png", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({
