@@ -39,6 +39,34 @@ const stepFields: Array<Array<keyof RegistrationInput>> = [
 
 const selectPlaceholder = "Sélectionner";
 
+const STORAGE_KEY = "smartcore-academique-registration-draft";
+
+const defaultValues: RegistrationInput = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  whatsapp: "",
+  gender: "",
+  ageRange: "",
+  country: "Haïti",
+  department: "",
+  city: "",
+  occupation: "",
+  educationLevel: "",
+  hasPaymentCard: "",
+  hasPaypal: "",
+  hasUsAddress: "",
+  onlinePurchaseExperience: "",
+  platforms: [],
+  mainGoal: "",
+  motivation: "",
+  referralSource: "",
+  termsAccepted: false,
+  communicationConsent: true,
+  payNow: false,
+  captchaToken: "",
+};
+
 const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 declare global {
@@ -59,50 +87,79 @@ declare global {
 
 export function RegistrationForm() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => {
+    if (typeof window === "undefined") return 0;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("step") === "confirmation") return 2;
+
+    try {
+      const savedDraft = window.localStorage.getItem(STORAGE_KEY);
+      if (!savedDraft) return 0;
+      const parsed = JSON.parse(savedDraft) as { step?: number };
+      return typeof parsed.step === "number" ? Math.min(Math.max(parsed.step, 0), 2) : 0;
+    } catch {
+      return 0;
+    }
+  });
   const [serverError, setServerError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [turnstileReady, setTurnstileReady] = useState(false);
   const turnstileRef = useRef<HTMLDivElement>(null);
   const widgetRenderedRef = useRef(false);
+  const draftReadyRef = useRef(false);
   const {
     register,
     handleSubmit,
     trigger,
     control,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<RegistrationInput>({
     resolver: zodResolver(registrationSchema),
     mode: "onTouched",
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      whatsapp: "",
-      gender: "",
-      ageRange: "",
-      country: "Haïti",
-      department: "",
-      city: "",
-      occupation: "",
-      educationLevel: "",
-      hasPaymentCard: "",
-      hasPaypal: "",
-      hasUsAddress: "",
-      onlinePurchaseExperience: "",
-      platforms: [],
-      mainGoal: "",
-      motivation: "",
-      referralSource: "",
-      termsAccepted: false,
-      communicationConsent: true,
-      captchaToken: "",
-    },
+    defaultValues,
   });
 
   const values = useWatch({ control });
   const progress = useMemo(() => `${((step + 1) / 3) * 100}%`, [step]);
+
+  useEffect(() => {
+    const savedDraft = window.localStorage.getItem(STORAGE_KEY);
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft) as {
+          values?: Partial<RegistrationInput>;
+          step?: number;
+        };
+        reset({
+          ...defaultValues,
+          ...parsed.values,
+          captchaToken: "",
+        });
+      } catch {
+        window.localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+    window.setTimeout(() => {
+      draftReadyRef.current = true;
+    }, 0);
+  }, [reset]);
+
+  useEffect(() => {
+    if (!draftReadyRef.current) return;
+
+    const draftValues = { ...values };
+    delete draftValues.captchaToken;
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        values: draftValues,
+        step,
+      }),
+    );
+  }, [step, values]);
 
   useEffect(() => {
     if (!turnstileSiteKey || step !== 2 || !turnstileReady || !turnstileRef.current || widgetRenderedRef.current) {
@@ -139,13 +196,37 @@ export function RegistrationForm() {
       });
       const result = (await response.json()) as {
         message?: string;
+        registrationId?: string;
         registrationNumber?: string;
         token?: string;
+        payNow?: boolean;
       };
       if (!response.ok) {
         setServerError(result.message ?? "Impossible d’enregistrer l’inscription.");
         return;
       }
+
+      if (data.payNow) {
+        const paymentResponse = await fetch("/api/kobara/create-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ registrationId: result.registrationId }),
+        });
+        const paymentResult = (await paymentResponse.json()) as {
+          checkoutUrl?: string;
+          error?: string;
+        };
+
+        if (!paymentResponse.ok || !paymentResult.checkoutUrl) {
+          setServerError(paymentResult.error ?? "Impossible de créer le paiement Kobara.");
+          return;
+        }
+
+        window.location.assign(paymentResult.checkoutUrl);
+        return;
+      }
+
+      window.localStorage.removeItem(STORAGE_KEY);
       router.push(`/inscription/succes?numero=${encodeURIComponent(
         result.registrationNumber ?? "",
       )}&token=${encodeURIComponent(result.token ?? "")}`);
@@ -310,6 +391,18 @@ export function RegistrationForm() {
               l’acquisition de l’adresse postale personnelle utilisée dans le cadre de la création de la carte et des
               exercices pratiques.
             </div>
+            <div className="rounded-xl border border-[#FFB800]/40 bg-[#FFB800]/10 p-4 text-sm leading-6 text-[#152238]">
+              <h3 className="text-base font-bold text-[#002B55]">Paiement de l’adresse postale</h3>
+              <p className="mt-2 font-bold">Montant : 1 400 HTG</p>
+              <p className="mt-2">
+                La formation est entièrement gratuite. Les 1 400 HTG correspondent uniquement à l’acquisition de votre
+                adresse postale personnelle utilisée pour la création de la carte et les activités pratiques.
+              </p>
+              <label className="mt-4 flex items-start gap-3 rounded-lg border border-[#FFB800]/40 bg-white p-3 font-semibold">
+                <input type="checkbox" className="mt-1 h-4 w-4 accent-[#002B55]" {...register("payNow")} />
+                <span>Je souhaite payer les 1 400 HTG maintenant avec Kobara.</span>
+              </label>
+            </div>
             {serverError ? (
               <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700" role="alert">
                 {serverError}
@@ -350,7 +443,11 @@ export function RegistrationForm() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-[#002B55] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#001E3C] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {submitting ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
-              {submitting ? "Envoi en cours..." : "Confirmer mon inscription"}
+              {submitting
+                ? "Envoi en cours..."
+                : values.payNow
+                  ? "Payer 1 400 HTG avec Kobara"
+                  : "Confirmer mon inscription"}
             </button>
           )}
         </div>

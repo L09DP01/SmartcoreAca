@@ -39,6 +39,7 @@ export const registrationSchema = z.object({
     .boolean()
     .refine((value) => value, "Vous devez accepter les conditions de participation."),
   communicationConsent: z.boolean(),
+  payNow: z.boolean(),
   captchaToken: z.string().optional(),
 });
 
@@ -74,6 +75,17 @@ export type RegistrationRecord = {
   referral_source: string;
   terms_accepted: boolean;
   communication_consent: boolean;
+  pay_now: boolean;
+  payment_status: "not_paid" | "pending" | "paid" | "failed" | "cancelled";
+  payment_amount: number;
+  amount_paid: number;
+  payment_currency: string;
+  kobara_payment_id: string | null;
+  kobara_checkout_url: string | null;
+  payment_attempted_at: string | null;
+  paid_at: string | null;
+  registration_status: "draft" | "confirmed";
+  confirmed_at: string | null;
   status: RegistrationStatus;
   confirmation_token: string;
   created_at: string;

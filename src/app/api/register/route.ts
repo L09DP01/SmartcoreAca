@@ -63,6 +63,8 @@ export async function POST(request: Request) {
     if (numberError) throw numberError;
 
     const confirmationToken = randomBytes(24).toString("hex");
+    const paymentStatus = parsed.data.payNow ? "pending" : "not_paid";
+    const registrationStatus = parsed.data.payNow ? "draft" : "confirmed";
     const { data: registration, error: insertError } = await supabase
       .from("registrations")
       .insert({
@@ -89,7 +91,14 @@ export async function POST(request: Request) {
         referral_source: parsed.data.referralSource,
         terms_accepted: parsed.data.termsAccepted,
         communication_consent: parsed.data.communicationConsent,
-        status: "En attente",
+        pay_now: parsed.data.payNow,
+        payment_status: paymentStatus,
+        payment_amount: 1400,
+        amount_paid: 0,
+        payment_currency: "HTG",
+        registration_status: registrationStatus,
+        confirmed_at: parsed.data.payNow ? null : new Date().toISOString(),
+        status: parsed.data.payNow ? "En attente" : "Confirmée",
         confirmation_token: confirmationToken,
       })
       .select("*")
@@ -97,11 +106,15 @@ export async function POST(request: Request) {
 
     if (insertError) throw insertError;
 
-    await sendConfirmationEmail(registration);
+    if (!parsed.data.payNow) {
+      await sendConfirmationEmail(registration);
+    }
 
     return NextResponse.json({
+      registrationId: registration.id,
       registrationNumber: registration.registration_number,
       token: registration.confirmation_token,
+      payNow: registration.pay_now,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Une erreur est survenue.";
