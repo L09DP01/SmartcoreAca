@@ -9,19 +9,28 @@ const CONFIRMED_STATUS = "Confirm\u00e9e";
 async function verifyTurnstile(token?: string) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  const enforceTurnstile = process.env.TURNSTILE_ENFORCE === "true";
   if (!secret || !siteKey) return true;
-  if (!token) return false;
+  if (!token) return !enforceTurnstile;
 
   const body = new FormData();
   body.append("secret", secret);
   body.append("response", token);
 
-  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-    method: "POST",
-    body,
-  });
-  const result = (await response.json()) as { success?: boolean };
-  return Boolean(result.success);
+  try {
+    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body,
+    });
+    const result = (await response.json()) as { "error-codes"?: string[]; success?: boolean };
+    if (!result.success) {
+      console.warn("Turnstile verification failed:", result["error-codes"]);
+    }
+    return enforceTurnstile ? Boolean(result.success) : true;
+  } catch (error) {
+    console.error("Turnstile verification error:", error);
+    return !enforceTurnstile;
+  }
 }
 
 export async function POST(request: Request) {

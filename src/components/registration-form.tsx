@@ -199,11 +199,6 @@ export function RegistrationForm() {
         captchaToken: getValues("captchaToken"),
       };
 
-      if (turnstileSiteKey && !currentData.captchaToken) {
-        resetTurnstile();
-        return;
-      }
-
       const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
