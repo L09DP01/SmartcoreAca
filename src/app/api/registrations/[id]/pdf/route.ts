@@ -2,12 +2,9 @@ import { NextResponse } from "next/server";
 import { createConfirmationPdf } from "@/lib/pdf";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ registrationNumber: string }> },
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { registrationNumber } = await params;
+    const { id: registrationNumber } = await params;
     const token = new URL(request.url).searchParams.get("token");
     if (!token) return NextResponse.json({ message: "Lien invalide." }, { status: 401 });
 
